@@ -1,0 +1,25 @@
+# This script will create a new Azure Container App, build the code files using the Dockerfile in this directory, push it to the
+# Azure Container Registry, and deploy it to the Azure Container App.
+
+$RG_NAME = '<resource-group-name>'
+$LOCATION = '<location>'
+$CONTAINER_APP_NAME = '<container-app-name>'
+$ACA_ENVIRONMENT_NAME = '<environment-name>'
+$ACR_NAME = '<acr-name>'
+$ACR_REGISTRY_SERVER = "$ACR_NAME.azurecr.io"
+$IMAGE_NAME = '<image-name>'
+
+Set-Location -Path '<path-to-dockerfile>' # Change the path to the directory containing the Dockerfile
+
+# Create a docker container using the Dockerfile
+docker build -t "$ACR_REGISTRY_SERVER/$IMAGE_NAME" .
+
+# Label the image and push it to Azure Container Registry
+az acr login --name $ACR_NAME
+docker push "$ACR_REGISTRY_SERVER/$IMAGE_NAME"
+
+# Deploy the image from Azure Container Registry to ACA
+az containerapp up --name $CONTAINER_APP_NAME --resource-group $RG_NAME --location $LOCATION --image "$ACR_REGISTRY_SERVER/$IMAGE_NAME" --ingress external --target-port 80 --environment $ACA_ENVIRONMENT_NAME
+
+# To only update the image
+az containerapp update --name $CONTAINER_APP_NAME --resource-group $RG_NAME --image "$ACR_REGISTRY_SERVER/$IMAGE_NAME"
